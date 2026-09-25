@@ -1,12 +1,10 @@
-from fastapi import HTTPException
-from sqlmodel import select
-from db import create_all_tables, SessionDep
+from fastapi import FastAPI, HTTPException, Depends
+from sqlmodel import select, Session
+from db import create_all_tables, get_session
 from models import (
     Cliente, ClienteCreate, ClienteUpdate,
     Factura, FacturaCreate, FacturaUpdate
 )
-
-from fastapi import FastAPI
 
 app = FastAPI(lifespan=create_all_tables)
 
@@ -15,7 +13,7 @@ def read_root():
     return {"Hello": "World"}
 
 @app.post("/clientes/", response_model=Cliente)
-def crear_cliente(cliente: ClienteCreate, session: SessionDep):
+def crear_cliente(cliente: ClienteCreate, session: Session = Depends(get_session)):
     db_cliente = Cliente.model_validate(cliente)
     session.add(db_cliente)
     session.commit()
@@ -23,18 +21,18 @@ def crear_cliente(cliente: ClienteCreate, session: SessionDep):
     return db_cliente
 
 @app.get("/clientes/", response_model=list[Cliente])
-def listar_clientes(session: SessionDep):
+def listar_clientes(session: Session = Depends(get_session)):
     return session.exec(select(Cliente)).all()
 
 @app.get("/clientes/{cliente_id}", response_model=Cliente)
-def obtener_cliente(cliente_id: int, session: SessionDep):
+def obtener_cliente(cliente_id: int, session: Session = Depends(get_session)):
     cliente = session.get(Cliente, cliente_id)
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
 
 @app.put("/clientes/{cliente_id}", response_model=Cliente)
-def actualizar_cliente(cliente_id: int, cliente_data: ClienteUpdate, session: SessionDep):
+def actualizar_cliente(cliente_id: int, cliente_data: ClienteUpdate, session: Session = Depends(get_session)):
     cliente_db = session.get(Cliente, cliente_id)
     if not cliente_db:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
@@ -49,7 +47,7 @@ def actualizar_cliente(cliente_id: int, cliente_data: ClienteUpdate, session: Se
     return cliente_db
 
 @app.delete("/clientes/{cliente_id}")
-def eliminar_cliente(cliente_id: int, session: SessionDep):
+def eliminar_cliente(cliente_id: int, session: Session = Depends(get_session)):
     cliente = session.get(Cliente, cliente_id)
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
@@ -58,10 +56,8 @@ def eliminar_cliente(cliente_id: int, session: SessionDep):
     return {"ok": True, "mensaje": f"Cliente {cliente_id} eliminado"}
 
 
-
 @app.post("/facturas/", response_model=Factura)
-def crear_factura(factura: FacturaCreate, session: SessionDep):
-    # Verificar que el cliente existe
+def crear_factura(factura: FacturaCreate, session: Session = Depends(get_session)):
     cliente = session.get(Cliente, factura.cliente_id)
     if not cliente:
         raise HTTPException(status_code=400, detail="El cliente especificado no existe")
@@ -73,18 +69,18 @@ def crear_factura(factura: FacturaCreate, session: SessionDep):
     return db_factura
 
 @app.get("/facturas/", response_model=list[Factura])
-def listar_facturas(session: SessionDep):
+def listar_facturas(session: Session = Depends(get_session)):
     return session.exec(select(Factura)).all()
 
 @app.get("/facturas/{factura_id}", response_model=Factura)
-def obtener_factura(factura_id: int, session: SessionDep):
+def obtener_factura(factura_id: int, session: Session = Depends(get_session)):
     factura = session.get(Factura, factura_id)
     if not factura:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     return factura
 
 @app.put("/facturas/{factura_id}", response_model=Factura)
-def actualizar_factura(factura_id: int, factura_data: FacturaUpdate, session: SessionDep):
+def actualizar_factura(factura_id: int, factura_data: FacturaUpdate, session: Session = Depends(get_session)):
     factura_db = session.get(Factura, factura_id)
     if not factura_db:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
@@ -99,7 +95,7 @@ def actualizar_factura(factura_id: int, factura_data: FacturaUpdate, session: Se
     return factura_db
 
 @app.delete("/facturas/{factura_id}")
-def eliminar_factura(factura_id: int, session: SessionDep):
+def eliminar_factura(factura_id: int, session: Session = Depends(get_session)):
     factura = session.get(Factura, factura_id)
     if not factura:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
