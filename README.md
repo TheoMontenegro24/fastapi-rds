@@ -1,0 +1,1 @@
+Tomar en cuenta que se debe crear un archivo .env dentro de la carpeta del proyecto en donde ira la credencial de la conexion a la base de datos en donde debe ir asi: DATABASE_URL=postgresql://USUARIO:CONTRASEÑA@ENDPOINT_RDS:PUERTO/NOMBRE_BASE_DATOS
